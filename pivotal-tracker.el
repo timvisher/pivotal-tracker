@@ -426,6 +426,21 @@
                                                     :estimate        estimate))))
   (message "Story added!"))
 
+(defun pivotal-label->alist (pivotal-label)
+  `(,(cdr (assoc 'name pivotal-label)) . ,(cdr (assoc 'id pivotal-label))))
+
+(defun pivotal-labels-for-project (project-id)
+  (with-current-buffer (pivotal-json-api (pivotal-v5-url "projects" project-id "labels")
+                                         "GET")
+    (pivotal-clear-headers (current-buffer))
+    (let ((project-labels (pivotal-get-json-from-current-buffer)))
+      (if (eq :reissue project-labels)
+          (pivotal-labels-for-project project-id)
+        project-labels))))
+
+(defun pivotal-get-labels-alist-for-project (project-id)
+  (-map #'pivotal-label->alist (pivotal-labels-for-project project-id)))
+
 (defun assert-pivotal-api-token ()
   (assert (not (string-equal "" pivotal-api-token)) nil "Please set pivotal-api-token: M-x customize-group RET pivotal RET"))
 
